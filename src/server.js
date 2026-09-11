@@ -13,7 +13,7 @@ dotenv.config();
 
 const app = express();
 
-// Dynamically handle local Vite ports (5173, 5174, etc.) and remote client URLs
+// Dynamically handle local development ports, Vercel preview URLs, and production domains
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
@@ -27,7 +27,9 @@ app.use(
       if (!origin) return callback(null, true);
       if (
         allowedOrigins.includes(origin) ||
-        origin.startsWith("http://localhost:")
+        origin.startsWith("http://localhost:") ||
+        origin.endsWith(".vercel.app") ||
+        process.env.CLIENT_URL === "*"
       ) {
         return callback(null, true);
       }
@@ -41,6 +43,21 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Root Health & Metadata Route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    name: "Vasudha Foundation Data Platform API",
+    status: "Active",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      publicDatasets: "/api/public/datasets",
+      auth: "/api/auth/login",
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Health Check
 app.get("/health", (req, res) => {
